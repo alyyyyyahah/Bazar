@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="tk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bazar</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1a1d23;--mut:#6b7280;--pri:#0f766e;--pri2:#115e59;--bd:#e5e7eb;--err:#b91c1c}
+*{box-sizing:border-box}body{margin:0;font:16px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--bd);padding:10px 14px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.logo{font-weight:800;color:var(--pri);font-size:20px;cursor:pointer}
+nav{display:flex;gap:6px;overflow-x:auto;margin-top:8px}
+nav button{white-space:nowrap}
+button,.btn{background:var(--pri);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;cursor:pointer}
+button:hover{background:var(--pri2)}button.sec{background:#e5e7eb;color:var(--ink)}button.sec.on{background:var(--ink);color:#fff}
+button.red{background:var(--err)}
+input,textarea,select{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font:inherit;background:#fff}
+textarea{min-height:80px}label{display:block;margin:10px 0 4px;font-size:14px;color:var(--mut)}
+main{max-width:1000px;margin:0 auto;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+.card.p{cursor:pointer}.card img{width:100%;aspect-ratio:1;object-fit:cover;background:#eee;display:block}
+.card .b{padding:10px}.price{font-weight:700;color:var(--pri)}.mut{color:var(--mut);font-size:14px}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.modal{position:fixed;inset:0;background:#0007;display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.modal>div{background:#fff;width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px}
+.modal img.big{width:100%;max-height:300px;object-fit:contain;background:#eee;border-radius:10px}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;background:#ccfbf1;color:#115e59;font-size:13px}
+.tag.w{background:#fef3c7;color:#92400e}.tag.r{background:#fee2e2;color:var(--err)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:20;max-width:90%}
+.badge{background:var(--err);color:#fff;border-radius:99px;padding:0 7px;font-size:12px;margin-left:4px}
+</style>
+</head>
+<body>
+<header>
+  <div class="row" style="justify-content:space-between">
+    <span class="logo" onclick="go('home')">🛒 Bazar</span>
+    <span id="who" class="mut"></span>
+  </div>
+  <nav id="nav"></nav>
+</header>
+<main id="app"></main>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://riywyltnydygazlyrvvh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_TuDkVcA-mywcPdwLjDsyNg_knCS2RbA';
+const PRICE = 10; // manat / aý
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let user = null, profile = null, view = 'home', query = '', newOrders = 0;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isSeller = () => profile?.seller_until && new Date(profile.seller_until) > new Date();
+const fmtDate = d => new Date(d).toLocaleString('tk-TM', {dateStyle:'short', timeStyle:'short'});
+
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',3500)}
+function go(v){view=v;render()}
+
+async function loadProfile(){
+  const {data:{session}} = await sb.auth.getSession();
+  user = session?.user || null;
+  profile = null;
+  if(user){
+    const {data} = await sb.from('profiles').select('*').eq('id',user.id).single();
+    profile = data;
+    subscribeOrders();
+  }
+}
+let chan=null;
+function subscribeOrders(){
+  if(chan) return;
+  chan = sb.channel('my-orders').on('postgres_changes',
+    {event:'INSERT',schema:'public',table:'orders',filter:`seller_id=eq.${user.id}`},
+    p=>{newOrders++;toast('🔔 Täze sargyt: '+p.new.product_title);renderNav();if(view==='orders')render()}).subscribe();
+}
+
+function renderNav(){
+  const b=(v,t,extra='')=>`<button class="sec ${view===v?'on':''}" onclick="go('${v}')">${t}${extra}</button>`;
+  let h=b('home','Baş sahypa');
+  if(user){
+    h+=b('sell','Satmak');
+    h+=b('orders','Sargytlar',newOrders?`<span class="badge">${newOrders}</span>`:'');
+    h+=b('profile','Profil');
+    if(profile?.is_admin) h+=b('admin','Admin');
+    h+=`<button class="sec" onclick="logout()">Çykmak</button>`;
+  } else h+=`<button onclick="go('login')">Girmek / Hasap açmak</button>`;
+  $('#nav').innerHTML=h;
+  $('#who').textContent=user?user.email:'';
+}
+
+async function logout(){await sb.auth.signOut();if(chan){sb.removeChannel(chan);chan=null}user=profile=null;view='home';render()}
+
+async function render(){
+  renderNav();
+  const a=$('#app');
+  if(view==='home') return viewHome(a);
+  if(view==='login') return viewLogin(a);
+  if(!user){view='login';return viewLogin(a)}
+  if(view==='sell') return viewSell(a);
+  if(view==='orders') return viewOrders(a);
+  if(view==='profile') return viewProfile(a);
+  if(view==='admin') return viewAdmin(a);
+}
+
+/* ---------- Baş sahypa + gözleg ---------- */
+async function viewHome(a){
+  a.innerHTML=`<div class="row" style="margin-bottom:12px"><input id="q" placeholder="🔍 Haryt gözle..." value="${esc(query)}" style="flex:1"><button onclick="doSearch()">Gözle</button></div><div id="list" class="mut">Ýüklenýär...</div>`;
+  $('#q').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
+  let q=sb.from('products').select('*').eq('active',true).order('created_at',{ascending:false}).limit(60);
+  if(query){const k=query.replace(/[%,()]/g,' ').trim();q=q.or(`title.ilike.%${k}%,description.ilike.%${k}%,city.ilike.%${k}%`)}
+  const {data,error}=await q;
+  if(error) return $('#list').textContent='Ýalňyşlyk: '+error.message;
+  window._prods=data;
+  $('#list').className='grid';
+  $('#list').innerHTML=data.length?data.map(p=>`
+    <div class="card p" onclick="openProduct('${p.id}')">
+      <img src="${esc(p.image_url||'')}" alt="" loading="lazy">
+      <div class="b"><div>${esc(p.title)}</div><div class="price">${esc(p.price)} TMT</div><div class="mut">${esc(p.city||'')}</div></div>
+    </div>`).join(''):'<div class="mut">Haryt tapylmady.</div>';
+}
+function doSearch(){query=$('#q').value;viewHome($('#app'))}
+
+function modal(html){
+  closeModal();
+  const m=document.createElement('div');m.className='modal';m.id='modal';
+  m.innerHTML=`<div>${html}</div>`;
+  m.addEventListener('click',e=>{if(e.target===m)closeModal()});
+  document.body.appendChild(m);
+}
+function closeModal(){$('#modal')?.remove()}
+
+function openProduct(id){
+  const p=window._prods.find(x=>x.id===id);
+  modal(`
+    <img class="big" src="${esc(p.image_url||'')}" alt="">
+    <h2 style="margin:10px 0 2px">${esc(p.title)}</h2>
+    <div class="price" style="font-size:20px">${esc(p.price)} TMT</div>
+    <div class="mut">${esc(p.city||'')}</div>
+    <p style="white-space:pre-wrap">${esc(p.description||'')}</p>
+    ${user?`
+    <h3>Sargyt etmek</h3>
+    <label>Adyňyz</label><input id="o_name" value="${esc(profile?.full_name||'')}">
+    <label>Telefon nomeriňiz</label><input id="o_phone" type="tel" value="${esc(profile?.phone||'')}">
+    <label>Şäheriňiz</label><input id="o_city" value="${esc(profile?.city||'')}">
+    <label>Adres</label><textarea id="o_addr"></textarea>
+    <label>Sany</label><input id="o_qty" type="number" min="1" value="1">
+    <div class="row" style="margin-top:14px"><button onclick="placeOrder('${p.id}')">Sargyt ber</button><button class="sec" onclick="closeModal()">Ýap</button></div>
+    `:`<button onclick="closeModal();go('login')">Sargyt üçin giriň</button>`}
+  `);
+}
+
+async function placeOrder(id){
+  const v=k=>$('#'+k).value.trim();
+  if(!v('o_name')||!v('o_phone')||!v('o_city')||!v('o_addr')) return toast('Ähli meýdanlary dolduryň');
+  const {error}=await sb.rpc('place_order',{p_product:id,p_name:v('o_name'),p_phone:v('o_phone'),p_city:v('o_city'),p_address:v('o_addr'),p_qty:parseInt(v('o_qty'))||1});
+  if(error) return toast('Ýalňyşlyk: '+error.message);
+  closeModal();toast('✅ Sargydyňyz satyja ugradyldy');
+}
+
+/* ---------- Giriş ---------- */
+let mode='in';
+function viewLogin(a){
+  a.innerHTML=`<div class="box" style="max-width:420px;margin:auto">
+    <button style="width:100%" onclick="googleLogin()">Gmail (Google) bilen girmek</button>
+    <p class="mut" style="text-align:center">ýa-da</p>
+    <label>Gmail adresiňiz</label><input id="em" type="email" placeholder="ady@gmail.com">
+    <label>Parol</label><input id="pw" type="password" placeholder="iň az 6 simwol">
+    <div class="row" style="margin-top:14px">
+      <button onclick="emailAuth('in')">Girmek</button>
+      <button class="sec" onclick="emailAuth('up')">Hasap açmak</button>
+    </div></div>`;
+}
+async function googleLogin(){
+  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+  if(error) toast(error.message);
+}
+async function emailAuth(kind){
+  const email=$('#em').value.trim().toLowerCase(), password=$('#pw').value;
+  if(!/^[^@\s]+@gmail\.com$/.test(email)) return toast('Diňe Gmail adresi ulanyň');
+  if(password.length<6) return toast('Parol iň az 6 simwol bolmaly');
+  if(kind==='up'){
+    const {data,error}=await sb.auth.signUp({email,password});
+    if(error) return toast(error.message);
+    if(!data.session) return toast('📧 Gmail poçtaňyza iberilen hatdaky salgyda basyp tassyklaň, soň giriň');
+  } else {
+    const {error}=await sb.auth.signInWithPassword({email,password});
+    if(error) return toast('Email ýa-da parol nädogry');
+  }
+  await loadProfile();go('home');
+}
+
+/* ---------- Profil ---------- */
+function viewProfile(a){
+  a.innerHTML=`<div class="box" style="max-width:480px"><h3>Profil</h3>
+    <label>Ady</label><input id="p_name" value="${esc(profile?.full_name||'')}">
+    <label>Telefon</label><input id="p_phone" type="tel" value="${esc(profile?.phone||'')}">
+    <label>Şäher</label><input id="p_city" value="${esc(profile?.city||'')}">
+    <button style="margin-top:14px" onclick="saveProfile()">Ýatda sakla</button></div>`;
+}
+async function saveProfile(){
+  const {error}=await sb.from('profiles').update({full_name:$('#p_name').value.trim(),phone:$('#p_phone').value.trim(),city:$('#p_city').value.trim()}).eq('id',user.id);
+  if(error) return toast(error.message);
+  await loadProfile();toast('Ýatda saklandy');
+}
+
+/* ---------- Satmak ---------- */
+async function viewSell(a){
+  let h='';
+  if(!isSeller()){
+    const {data:reqs}=await sb.from('sub_requests').select('*').eq('user_id',user.id).order('created_at',{ascending:false}).limit(1);
+    const pending=reqs?.[0]?.status==='pending';
+    h+=`<div class="box"><h3>Satyjy bolmak</h3>
+      <p>Aýlyk töleg: <b>${PRICE} manat</b>. Töleg edeniňizden soň aşakdaky düwmä basyp, tölegiň barada (tölegçiniň ady / çek belgisi / telefon) ýazyň. Admin barlap, hasabyňyzy 30 gün açar.</p>
+      ${pending?'<span class="tag w">Haýyşyňyz barlanylýar...</span>':`
+      <label>Töleg barada maglumat</label><textarea id="sr_note"></textarea>
+      <button style="margin-top:10px" onclick="sendSubReq()">Töledim, tassyklaň</button>`}
+    </div>`;
+    return a.innerHTML=h;
+  }
+  h+=`<div class="box"><span class="tag">Satyjy hasaby açyk: ${new Date(profile.seller_until).toLocaleDateString('tk-TM')} çenli</span></div>
+  <div class="box"><h3>Täze haryt goş</h3>
+    <label>Ady</label><input id="n_title">
+    <label>Bahasy (TMT)</label><input id="n_price" type="number" min="0" step="0.01">
+    <label>Şäher</label><input id="n_city" value="${esc(profile?.city||'')}">
+    <label>Maglumat</label><textarea id="n_desc"></textarea>
+    <label>Surat</label><input id="n_img" type="file" accept="image/*">
+    <button style="margin-top:12px" id="n_btn" onclick="addProduct()">Goş</button></div>
+  <h3>Meniň harytlarym</h3><div id="mine" class="grid mut">Ýüklenýär...</div>`;
+  a.innerHTML=h;
+  const {data}=await sb.from('products').select('*').eq('seller_id',user.id).order('created_at',{ascending:false});
+  $('#mine').className='grid';
+  $('#mine').innerHTML=data.length?data.map(p=>`<div class="card"><img src="${esc(p.image_url||'')}"><div class="b">${esc(p.title)}<div class="price">${esc(p.price)} TMT</div>
+    <button class="red" style="margin-top:6px;padding:5px 10px" onclick="delProduct('${p.id}')">Poz</button></div></div>`).join(''):'<div class="mut">Heniz haryt ýok.</div>';
+}
+async function sendSubReq(){
+  const {error}=await sb.from('sub_requests').insert({user_id:user.id,note:$('#sr_note').value.trim()});
+  if(error) return toast(error.message);
+  toast('Haýyş ugradyldy');viewSell($('#app'));
+}
+async function addProduct(){
+  const title=$('#n_title').value.trim(),price=parseFloat($('#n_price').value),file=$('#n_img').files[0];
+  if(!title||isNaN(price)) return toast('Ady we bahasy hökman');
+  if(!file) return toast('Surat saýlaň');
+  if(file.size>5*1024*1024) return toast('Surat 5MB-dan kiçi bolmaly');
+  $('#n_btn').disabled=true;
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const path=`${user.id}/${Date.now()}.${ext}`;
+  const up=await sb.storage.from('product-images').upload(path,file,{contentType:file.type});
+  if(up.error){$('#n_btn').disabled=false;return toast('Surat ýüklenmedi: '+up.error.message)}
+  const image_url=sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+  const {error}=await sb.from('products').insert({seller_id:user.id,title,price,city:$('#n_city').value.trim(),description:$('#n_desc').value.trim(),image_url});
+  if(error){$('#n_btn').disabled=false;return toast(error.message)}
+  toast('✅ Haryt goşuldy');viewSell($('#app'));
+}
+async function delProduct(id){
+  if(!confirm('Haryt pozulsynmy?')) return;
+  const {error}=await sb.from('products').delete().eq('id',id);
+  if(error) return toast(error.message);
+  viewSell($('#app'));
+}
+
+/* ---------- Sargytlar ---------- */
+const STATUS={taze:'Täze',tassyklandy:'Tassyklandy',ugradyldy:'Ugradyldy',yatyryldy:'Ýatyryldy'};
+async function viewOrders(a){
+  newOrders=0;renderNav();
+  a.innerHTML='<div class="mut">Ýüklenýär...</div>';
+  const {data,error}=await sb.from('orders').select('*').order('created_at',{ascending:false});
+  if(error) return a.innerHTML='Ýalňyşlyk: '+esc(error.message);
+  const sold=data.filter(o=>o.seller_id===user.id), bought=data.filter(o=>o.buyer_id===user.id);
+  a.innerHTML=`<h3>Maňa gelen sargytlar</h3>${sold.map(o=>`
+    <div class="box"><b>${esc(o.product_title)}</b> × ${o.qty} <span class="tag">${STATUS[o.status]||esc(o.status)}</span>
+    <div class="mut">${fmtDate(o.created_at)}</div>
+    <div>👤 ${esc(o.buyer_name)}<br>📞 <a href="tel:${esc(o.buyer_phone)}">${esc(o.buyer_phone)}</a><br>🏙 ${esc(o.buyer_city)}<br>📍 ${esc(o.buyer_address)}</div>
+    <select style="margin-top:8px" onchange="setStatus('${o.id}',this.value)">${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select></div>`).join('')||'<div class="mut">Sargyt ýok.</div>'}
+    <h3>Meniň sargytlarym</h3>${bought.map(o=>`<div class="box"><b>${esc(o.product_title)}</b> × ${o.qty} <span class="tag">${STATUS[o.status]||esc(o.status)}</span><div class="mut">${fmtDate(o.created_at)}</div></div>`).join('')||'<div class="mut">Sargyt ýok.</div>'}`;
+}
+async function setStatus(id,status){
+  const {error}=await sb.from('orders').update({status}).eq('id',id);
+  toast(error?error.message:'Ýatda saklandy');
+}
+
+/* ---------- Admin ---------- */
+async function viewAdmin(a){
+  const {data,error}=await sb.from('sub_requests').select('*, profiles(email,full_name,phone)').order('created_at',{ascending:false}).limit(50);
+  if(error) return a.innerHTML='Ýalňyşlyk: '+esc(error.message);
+  a.innerHTML=`<h3>Satyjylyk haýyşlary (${PRICE} manat / aý)</h3>`+(data.map(r=>`
+    <div class="box"><b>${esc(r.profiles?.email)}</b> ${esc(r.profiles?.full_name||'')} ${esc(r.profiles?.phone||'')}
+    <span class="tag ${r.status==='pending'?'w':r.status==='rejected'?'r':''}">${r.status}</span>
+    <div class="mut">${fmtDate(r.created_at)}</div><p>${esc(r.note||'')}</p>
+    ${r.status==='pending'?`<button onclick="adminAct('approve_request','${r.id}')">Tassykla (+30 gün)</button> <button class="red" onclick="adminAct('reject_request','${r.id}')">Ret et</button>`:''}</div>`).join('')||'<div class="mut">Haýyş ýok.</div>');
+}
+async function adminAct(fn,id){
+  const {error}=await sb.rpc(fn,{rid:id});
+  if(error) return toast(error.message);
+  viewAdmin($('#app'));
+}
+
+sb.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_IN'||ev==='SIGNED_OUT') loadProfile().then(render) });
+loadProfile().then(render);
+</script>
+</body>
+  </html>
