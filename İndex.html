@@ -1,1 +1,314 @@
 
+/* ---------- Giriş ---------- */
+let mode = 'in';
+
+function viewLogin(a) {
+  a.innerHTML = `
+    <div class="box" style="max-width:420px;margin:auto">
+      <h2>🛒 Bazar</h2>
+      <button style="width:100%" onclick="googleLogin()">Gmail (Google) bilen girmek</button>
+      <p class="mut" style="text-align:center">ýa-da</p>
+      <label>Gmail adresiňiz</label>
+      <input id="em" type="email" placeholder="ady@gmail.com">
+      <label>Parol</label>
+      <input id="pw" type="password" placeholder="Iň az 6 simwol">
+      <div class="row" style="margin-top:14px">
+        <button onclick="emailAuth('in')">Girmek</button>
+        <button class="sec" onclick="emailAuth('up')">Hasap açmak</button>
+      </div>
+    </div>`;
+}
+
+async function googleLogin() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: location.origin + location.pathname }
+  });
+  if (error) toast(error.message);
+}
+
+async function emailAuth(kind) {
+  const email = $('#em').value.trim().toLowerCase();
+  const password = $('#pw').value;
+
+  if (!/^[^@\s]+@gmail\.com$/.test(email))
+    return toast('Diňe Gmail adresi ulanyň');
+
+  if (password.length < 6)
+    return toast('Parol iň az 6 simwol bolmaly');
+
+  if (kind === 'up') {
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (error) return toast(error.message);
+    if (!data.session)
+      return toast('Gmail poçtaňyzy tassyklaň, soňra giriň');
+  } else {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) return toast('Email ýa-da parol nädogry');
+  }
+
+  await loadProfile();
+  go('home');
+}
+
+/* ---------- Profil ---------- */
+function viewProfile(a) {
+  a.innerHTML = `
+    <div class="box" style="max-width:480px">
+      <h3>Profil</h3>
+      <label>Ady</label>
+      <input id="p_name" value="${esc(profile?.full_name || '')}">
+      <label>Telefon</label>
+      <input id="p_phone" type="tel" value="${esc(profile?.phone || '')}">
+      <label>Şäher</label>
+      <input id="p_city" value="${esc(profile?.city || '')}">
+      <button style="margin-top:14px" onclick="saveProfile()">Ýatda sakla</button>
+    </div>`;
+}
+
+async function saveProfile() {
+  const { error } = await sb.from('profiles').update({
+    full_name: $('#p_name').value.trim(),
+    phone: $('#p_phone').value.trim(),
+    city: $('#p_city').value.trim()
+  }).eq('id', user.id);
+
+  if (error) return toast(error.message);
+  await loadProfile();
+  toast('Ýatda saklandy');
+}
+
+/* ---------- Satmak ---------- */
+async function viewSell(a) {
+  let h = '';
+
+  if (!isSeller()) {
+    const { data: reqs, error } = await sb
+      .from('sub_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      a.innerHTML = `<div class="box">Ýalňyşlyk: ${esc(error.message)}</div>`;
+      return;
+    }
+
+    const pending = reqs?.[0]?.status === 'pending';
+
+    h += `
+      <div class="box">
+        <h3>Satyjy bolmak</h3>
+        <p>Aýlyk töleg: <b>${PRICE} TMT</b>.</p>
+        <p class="mut">Töleg baradaky maglumaty iberiň. Admin barlap, haýyşy tassyklaýar.</p>
+        ${pending
+          ? '<span class="tag w">Haýşyňyz barlanylýar</span>'
+          : `
+            <label>Töleg barada maglumat</label>
+            <textarea id="sr_note" placeholder="Töleg belgisi ýa-da düşündiriş"></textarea>
+            <button style="margin-top:10px" onclick="sendSubReq()">Haýyş iber</button>
+          `}
+      </div>`;
+    a.innerHTML = h;
+    return;
+  }
+
+  h += `
+    <div class="box">
+      <span class="tag">Satyjy hasaby açyk</span>
+    </div>
+    <div class="box">
+      <h3>Täze haryt goş</h3>
+      <label>Ady</label><input id="n_title">
+      <label>Bahasy (TMT)</label><input id="n_price" type="number" min="0" step="0.01">
+      <label>Şäher</label><input id="n_city" value="${esc(profile?.city || '')}">
+      <label>Maglumat</label><textarea id="n_desc"></textarea>
+      <label>Surat</label><input id="n_img" type="file" accept="image/*">
+      <button style="margin-top:12px" id="n_btn" onclick="addProduct()">Goş</button>
+    </div>
+    <h3>Meniň harytlarym</h3>
+    <div id="mine" class="grid mut">Ýüklenýär...</div>`;
+
+  a.innerHTML = h;
+
+  const { data, error } = await sb.from('products')
+    .select('*').eq('seller_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    $('#mine').textContent = error.message;
+    return;
+  }
+
+  $('#mine').className = 'grid';
+  $('#mine').innerHTML = data?.length ? data.map(p => `
+    <div class="card">
+      <img src="${esc(p.image_url || '')}" alt="">
+      <div class="b">
+        ${esc(p.title)}
+        <div class="price">${esc(p.price)} TMT</div>
+        <button class="red" style="margin-top:6px"
+          onclick="delProduct('${p.id}')">Poz</button>
+      </div>
+    </div>`).join('') : '<div class="mut">Heniz haryt ýok.</div>';
+}
+
+async function sendSubReq() {
+  const note = $('#sr_note')?.value.trim() || '';
+  const { error } = await sb.from('sub_requests')
+    .insert({ user_id: user.id, note });
+
+  if (error) return toast(error.message);
+  toast('Haýyş ugradyldy');
+  viewSell($('#app'));
+}
+
+async function addProduct() {
+  const title = $('#n_title').value.trim();
+  const price = parseFloat($('#n_price').value);
+  const file = $('#n_img').files[0];
+
+  if (!title || !Number.isFinite(price) || price <= 0)
+    return toast('Harydyň adyny we dogry bahasyny giriziň');
+
+  if (!file) return toast('Surat saýlaň');
+  if (file.size > 5 * 1024 * 1024)
+    return toast('Surat 5 MB-dan kiçi bolmaly');
+
+  $('#n_btn').disabled = true;
+  const ext = (file.name.split('.').pop() || 'jpg')
+    .toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const path = `${user.id}/${Date.now()}.${ext}`;
+
+  const up = await sb.storage.from('product-images')
+    .upload(path, file, { contentType: file.type });
+
+  if (up.error) {
+    $('#n_btn').disabled = false;
+    return toast('Surat ýüklenmedi: ' + up.error.message);
+  }
+
+  const image_url = sb.storage.from('product-images')
+    .getPublicUrl(path).data.publicUrl;
+
+  const { error } = await sb.from('products').insert({
+    seller_id: user.id,
+    title,
+    price,
+    city: $('#n_city').value.trim(),
+    description: $('#n_desc').value.trim(),
+    image_url
+  });
+
+  if (error) {
+    $('#n_btn').disabled = false;
+    return toast(error.message);
+  }
+
+  toast('Haryt goşuldy');
+  viewSell($('#app'));
+}
+
+async function delProduct(id) {
+  if (!confirm('Haryt pozulsynmy?')) return;
+
+  const { error } = await sb.from('products')
+    .delete().eq('id', id);
+
+  if (error) return toast(error.message);
+  viewSell($('#app'));
+}
+
+/* ---------- Sargytlar ---------- */
+const STATUS = {
+  taze: 'Täze',
+  tassyklandy: 'Tassyklandy',
+  ugradyldy: 'Ugradyldy',
+  yatyryldy: 'Ýatyryldy'
+};
+
+async function viewOrders(a) {
+  newOrders = 0;
+  renderNav();
+  a.innerHTML = '<div class="mut">Ýüklenýär...</div>';
+
+  const { data, error } = await sb.from('orders')
+    .select('*').order('created_at', { ascending: false });
+
+  if (error) {
+    a.innerHTML = `Ýalňyşlyk: ${esc(error.message)}`;
+    return;
+  }
+
+  const sold = (data || []).filter(o => o.seller_id === user.id);
+  const bought = (data || []).filter(o => o.buyer_id === user.id);
+
+  const card = o => `
+    <div class="box">
+      <b>${esc(o.product_title || 'Haryt')}</b> × ${esc(o.qty ?? 1)}
+      <span class="tag">${esc(STATUS[o.status] || o.status || '')}</span>
+      <div class="mut">${esc(fmtDate(o.created_at))}</div>
+      ${o.buyer_name ? `
+        <div>👤 ${esc(o.buyer_name)}</div>
+        <div>📞 <a href="tel:${esc(o.buyer_phone)}">${esc(o.buyer_phone)}</a></div>
+        <div>🏙 ${esc(o.buyer_city || '')}</div>
+        <div>📍 ${esc(o.buyer_address || '')}</div>
+        <select style="margin-top:8px"
+          onchange="setStatus('${o.id}',this.value)">
+          ${Object.entries(STATUS).map(([k,v]) =>
+            `<option value="${k}" ${o.status === k ? 'selected' : ''}>${v}</option>`
+          ).join('')}
+        </select>` : ''}
+    </div>`;
+
+  a.innerHTML = `
+    <h3>Maňa gelen sargytlar</h3>
+    ${sold.map(card).join('') || '<div class="mut">Sargyt ýok.</div>'}
+    <h3>Meniň sargytlarym</h3>
+    ${bought.map(card).join('') || '<div class="mut">Sargyt ýok.</div>'}`;
+}
+
+async function setStatus(id, status) {
+  const { error } = await sb.from('orders')
+    .update({ status }).eq('id', id);
+  toast(error ? error.message : 'Ýatda saklandy');
+}
+
+/* ---------- Admin ---------- */
+async function viewAdmin(a) {
+  const { data, error } = await sb.from('sub_requests')
+    .select('*, profiles(email,full_name,phone)')
+    .order('created_at', { ascending: false }).limit(50);
+
+  if (error) {
+    a.innerHTML = `Ýalňyşlyk: ${esc(error.message)}`;
+    return;
+  }
+
+  a.innerHTML = `
+    <h3>Satyjylyk haýyşlary (${PRICE} TMT / aý)</h3>
+    ${(data || []).map(r => `
+      <div class="box">
+        <b>${esc(r.profiles?.email || r.user_id)}</b>
+        ${esc(r.profiles?.full_name || '')}
+        ${esc(r.profiles?.phone || '')}
+        <span class="tag ${r.status === 'pending' ? 'w' : r.status === 'rejected' ? 'r' : ''}">
+          ${esc(r.status || '')}
+        </span>
+        <div class="mut">${esc(fmtDate(r.created_at))}</div>
+        <p>${esc(r.note || '')}</p>
+        ${r.status === 'pending' ? `
+          <button onclick="adminAct('approve_request','${r.id}')">Tassykla (+30 gün)</button>
+          <button class="red" onclick="adminAct('reject_request','${r.id}')">Ret et</button>
+        ` : ''}
+      </div>`).join('') || '<div class="mut">Haýyş ýok.</div>'}`;
+}
+
+async function adminAct(fn, id) {
+  const { error } = await sb.rpc(fn, { rid: id });
+  if (error) return toast(error.message);
+  toast('Amal ýerine ýetirildi');
+  viewAdmin($('#app'));
+}
+    
