@@ -1,314 +1,447 @@
+<!doctype html>
+<html lang="tk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0ea5a4">
+<title>Bazar</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bazar">
+<style>
+:root{--pri:#0ea5a4;--acc:#6366f1;--onpri:#fff;--r:16px;--bg:#f4f6fb;--card:#fff;--ink:#141824;--mut:#6a7388;--bd:#e4e8f1;--shadow:0 6px 24px #1a2a5a14;--err:#e11d48;--ok:#16a34a;--warn:#d97706}
+:root[data-dark="1"]{--bg:#0d1017;--card:#171b25;--ink:#eef1f8;--mut:#9aa3b8;--bd:#262c3a;--shadow:0 6px 24px #0008}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font:16px/1.45 Manrope,system-ui,sans-serif;color:var(--ink);min-height:100vh;background:radial-gradient(900px 500px at 90% -10%,color-mix(in srgb,var(--pri) 16%,transparent),transparent),radial-gradient(700px 500px at -10% 30%,color-mix(in srgb,var(--acc) 12%,transparent),transparent),var(--bg)}
+header{position:sticky;top:0;z-index:5;padding:10px 14px;backdrop-filter:blur(14px);background:color-mix(in srgb,var(--card) 82%,transparent);border-bottom:1px solid var(--bd)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.logo{font:800 20px Unbounded,Manrope,sans-serif;cursor:pointer;background:linear-gradient(90deg,var(--pri),var(--acc));-webkit-background-clip:text;background-clip:text;color:transparent}
+nav{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+button{background:linear-gradient(135deg,var(--pri),var(--acc));color:var(--onpri);border:0;border-radius:calc(var(--r) - 6px);padding:10px 16px;font:700 15px Manrope,system-ui,sans-serif;cursor:pointer;white-space:nowrap;position:relative;overflow:hidden;transition:transform .15s,filter .2s}
+button:active{transform:scale(.96)}button:disabled{opacity:.6;pointer-events:none}
+button.sec{background:var(--card);color:var(--ink);border:1px solid var(--bd)}
+button.sec.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.red{background:var(--err);color:#fff}
+button.icon{padding:8px 11px;font-size:18px;background:var(--card);color:var(--ink);border:1px solid var(--bd)}
+.ripple{position:absolute;border-radius:50%;background:#fff6;transform:scale(0);animation:rip .6s ease-out;pointer-events:none}
+@keyframes rip{to{transform:scale(4);opacity:0}}
+input,textarea,select{width:100%;padding:11px 12px;border:1.5px solid var(--bd);border-radius:calc(var(--r) - 6px);font:inherit;background:var(--card);color:var(--ink)}
+input:focus,textarea:focus,select:focus{outline:0;border-color:var(--pri);box-shadow:0 0 0 4px color-mix(in srgb,var(--pri) 20%,transparent)}
+input[type=color]{padding:2px;height:44px}input[type=range]{padding:0;accent-color:var(--pri)}
+textarea{min-height:80px}label{display:block;margin:12px 0 5px;font-size:13px;font-weight:700;color:var(--mut)}
+main{max-width:1000px;margin:0 auto;padding:14px}
+.hero{position:relative;overflow:hidden;border-radius:calc(var(--r) + 8px);padding:26px 18px 20px;margin-bottom:18px;color:var(--onpri);background:linear-gradient(135deg,var(--pri),var(--acc))}
+.hero h1{font:800 clamp(22px,5vw,34px)/1.15 Unbounded,Manrope,sans-serif;margin:0 0 6px;position:relative}
+.hero p{margin:0 0 16px;opacity:.9;position:relative}
+.hero .row{position:relative;background:var(--card);padding:6px;border-radius:calc(var(--r) + 2px);flex-wrap:nowrap}
+.hero input{border:0;background:transparent;color:var(--ink)}
+.orb{position:absolute;border-radius:50%;background:#ffffff2e;animation:float 9s ease-in-out infinite}
+.orb.a{width:180px;height:180px;right:-40px;top:-60px}.orb.b{width:110px;height:110px;right:30%;bottom:-50px}
+@keyframes float{50%{transform:translate(14px,-18px) scale(1.08)}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.card.p{cursor:pointer}
+.card .im{overflow:hidden;aspect-ratio:1;background:color-mix(in srgb,var(--pri) 18%,var(--card))}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card .b{padding:11px 12px 13px}.card .t{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.price{font-weight:800;color:var(--pri)}.mut{color:var(--mut);font-size:14px}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+h3{margin:0 0 8px;font-family:Unbounded,Manrope,sans-serif;font-size:16px}
+.chips{display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.empty{text-align:center;padding:40px 10px;color:var(--mut)}.empty b{display:block;font-size:42px}
+.modal{position:fixed;inset:0;background:#0009;display:flex;align-items:flex-end;justify-content:center;z-index:10}
+.modal>div{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:16px 16px 24px}
+.modal img.big{width:100%;max-height:300px;object-fit:cover;border-radius:var(--r)}
+.tag{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:800;background:color-mix(in srgb,var(--pri) 16%,transparent);color:var(--pri)}
+.tag.w{background:#f59e0b26;color:var(--warn)}.tag.r{background:#e11d4820;color:var(--err)}.tag.g{background:#16a34a22;color:var(--ok)}
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,30px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;opacity:0;pointer-events:none;z-index:20;max-width:90%;font-weight:700;transition:.35s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.badge{background:var(--err);color:#fff;border-radius:99px;padding:0 7px;font-size:12px;margin-left:6px}
+.sw{display:flex;gap:10px;flex-wrap:wrap}
+.sw button{width:46px;height:46px;border-radius:50%;padding:0;border:3px solid var(--card)}
+.sw button.on{box-shadow:0 0 0 3px var(--ink)}
+.seg{display:flex;gap:6px}.seg button{flex:1}
+#prev{display:none;width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px}
+:root[data-motion="0"] *{animation:none!important;transition:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="row" style="justify-content:space-between">
+    <span class="logo" onclick="go('home')">🛒 Bazar</span>
+    <span class="row"><span id="who" class="mut" style="font-size:13px"></span><button id="inst" class="icon" style="display:none;font-size:14px" onclick="installApp()">📲 Gur</button><button class="icon" onclick="openTheme()" aria-label="Dizaýn">🎨</button></span>
+  </div>
+  <nav id="nav"></nav>
+</header>
+<main id="app"></main>
+<div class="mut" style="text-align:center;padding:16px;font-size:12px">Bazar v5</div>
+<div id="toast"></div>
 
-/* ---------- Giriş ---------- */
-let mode = 'in';
+<script>
+const SUPABASE_URL = 'https://riywyltnydygazlyrvvh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_TuDkVcA-mywcPdwLjDsyNg_knCS2RbA';
+const PRICE = 10;
 
-function viewLogin(a) {
-  a.innerHTML = `
-    <div class="box" style="max-width:420px;margin:auto">
-      <h2>🛒 Bazar</h2>
-      <button style="width:100%" onclick="googleLogin()">Gmail (Google) bilen girmek</button>
-      <p class="mut" style="text-align:center">ýa-da</p>
-      <label>Gmail adresiňiz</label>
-      <input id="em" type="email" placeholder="ady@gmail.com">
-      <label>Parol</label>
-      <input id="pw" type="password" placeholder="Iň az 6 simwol">
-      <div class="row" style="margin-top:14px">
-        <button onclick="emailAuth('in')">Girmek</button>
-        <button class="sec" onclick="emailAuth('up')">Hasap açmak</button>
-      </div>
-    </div>`;
-}
-
-async function googleLogin() {
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: location.origin + location.pathname }
-  });
-  if (error) toast(error.message);
-}
-
-async function emailAuth(kind) {
-  const email = $('#em').value.trim().toLowerCase();
-  const password = $('#pw').value;
-
-  if (!/^[^@\s]+@gmail\.com$/.test(email))
-    return toast('Diňe Gmail adresi ulanyň');
-
-  if (password.length < 6)
-    return toast('Parol iň az 6 simwol bolmaly');
-
-  if (kind === 'up') {
-    const { data, error } = await sb.auth.signUp({ email, password });
-    if (error) return toast(error.message);
-    if (!data.session)
-      return toast('Gmail poçtaňyzy tassyklaň, soňra giriň');
-  } else {
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) return toast('Email ýa-da parol nädogry');
+function createSB(url,key){
+  const SK='bazar_session',subs=[];let session=null;
+  try{session=JSON.parse(localStorage.getItem(SK)||'null')}catch(e){}
+  const save=s=>{session=s;try{s?localStorage.setItem(SK,JSON.stringify(s)):localStorage.removeItem(SK)}catch(e){}};
+  const emit=ev=>subs.forEach(f=>{try{f(ev,session)}catch(e){}});
+  const norm=j=>({access_token:j.access_token,refresh_token:j.refresh_token,expires_at:j.expires_at||Math.floor(Date.now()/1000)+(j.expires_in||3600),user:j.user});
+  const errMsg=b=>(b&&(b.message||b.msg||b.error_description||b.error))||'Ýalňyşlyk';
+  async function token(){
+    if(!session) return null;
+    if(session.expires_at*1000<Date.now()+30000){
+      try{
+        const r=await fetch(url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:session.refresh_token})});
+        if(r.ok){const j=await r.json();save(norm(j))}else{save(null);return null}
+      }catch(e){return session.access_token}
+    }
+    return session.access_token;
   }
+  async function call(path,opt={}){
+    const t=await token();
+    let r,tx;
+    try{r=await fetch(url+path,{...opt,headers:{apikey:key,Authorization:'Bearer '+(t||key),...(opt.headers||{})}});tx=await r.text()}
+    catch(e){return {data:null,error:{message:'Internet ýok ýa-da serwere ýetip bolmady'}}}
+    let b=null;try{b=tx?JSON.parse(tx):null}catch(e){b=tx}
+    if(!r.ok) return {data:null,error:{message:errMsg(b)}};
+    return {data:b,error:null};
+  }
+  const ready=(async()=>{
+    if(!location.hash.includes('access_token=')) return;
+    const p=new URLSearchParams(location.hash.slice(1)),at=p.get('access_token');
+    try{
+      const r=await fetch(url+'/auth/v1/user',{headers:{apikey:key,Authorization:'Bearer '+at}});
+      if(r.ok){save({access_token:at,refresh_token:p.get('refresh_token'),expires_at:+p.get('expires_at')||Math.floor(Date.now()/1000)+3600,user:await r.json()});history.replaceState(null,'',location.pathname+location.search);emit('SIGNED_IN')}
+    }catch(e){}
+  })();
+  class Q{
+    constructor(t){this.t=t;this.p=[];this.m='GET';this.body=null;this.h={}}
+    select(c='*'){if(this.m==='GET')this.p.push(['select',c]);return this}
+    insert(o){this.m='POST';this.body=o;this.h.Prefer='return=minimal';return this}
+    update(o){this.m='PATCH';this.body=o;this.h.Prefer='return=minimal';return this}
+    delete(){this.m='DELETE';this.h.Prefer='return=minimal';return this}
+    eq(k,v){this.p.push([k,'eq.'+v]);return this}
+    in(k,a){this.p.push([k,'in.('+a.join(',')+')']);return this}
+    or(s){this.p.push(['or','('+s+')']);return this}
+    order(c,o){this.p.push(['order',c+'.'+(o&&o.ascending===false?'desc':'asc')]);return this}
+    limit(n){this.p.push(['limit',n]);return this}
+    single(){this.h.Accept='application/vnd.pgrst.object+json';return this}
+    then(a,b){
+      const qs=new URLSearchParams(this.p).toString();
+      const h={...this.h};if(this.body!==null)h['Content-Type']='application/json';
+      return call('/rest/v1/'+this.t+(qs?'?'+qs:''),{method:this.m,headers:h,body:this.body!==null?JSON.stringify(this.body):undefined}).then(a,b);
+    }
+  }
+  const enc=p=>p.split('/').map(encodeURIComponent).join('/');
+  return {
+    from:t=>new Q(t),
+    rpc:(fn,args)=>call('/rest/v1/rpc/'+fn,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(args||{})}),
+    storage:{from:b=>({
+      upload:async(path,file,o={})=>{const r=await call('/storage/v1/object/'+b+'/'+enc(path),{method:'POST',headers:{'Content-Type':o.contentType||file.type||'application/octet-stream'},body:file});return {data:r.data,error:r.error}},
+      getPublicUrl:path=>({data:{publicUrl:url+'/storage/v1/object/public/'+b+'/'+enc(path)}})
+    })},
+    auth:{
+      getSession:async()=>{await ready;await token();return {data:{session}}},
+      onAuthStateChange:cb=>{subs.push(cb);return {data:{subscription:{unsubscribe(){}}}}},
+      signUp:async({email,password,options})=>{
+        const r=await call('/auth/v1/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,data:(options&&options.data)||{}})});
+        if(r.error) return {data:null,error:r.error};
+        const s=r.data.access_token?norm(r.data):null;
+        if(s){save(s);emit('SIGNED_IN')}
+        return {data:{session:s,user:r.data.user||r.data},error:null};
+      },
+      signInWithPassword:async({email,password})=>{
+        const r=await call('/auth/v1/token?grant_type=password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+        if(r.error) return {data:null,error:r.error};
+        save(norm(r.data));emit('SIGNED_IN');return {data:{session},error:null};
+      },
+      signInWithOAuth:async({provider,options})=>{location.href=url+'/auth/v1/authorize?provider='+provider+'&redirect_to='+encodeURIComponent((options&&options.redirectTo)||location.href);return {error:null}},
+      signOut:async()=>{try{await call('/auth/v1/logout',{method:'POST'})}catch(e){}save(null);emit('SIGNED_OUT');return {error:null}}
+    }
+  };
+}let sb = createSB(SUPABASE_URL,SUPABASE_KEY);
+let user=null,profile=null,view='home',query='',newOrders=0,pollT=null,lastCnt=null,deferredPrompt=null;
+const CATS=[['📱','Elektronika'],['👕','Egin-eşik'],['🏠','Öý-hojalyk'],['🚗','Awto'],['🍎','Azyk'],['💄','Gözellik'],['🧸','Oýunjak'],['📦','Başga']];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isSeller=()=>profile?.seller_until&&new Date(profile.seller_until)>new Date();
+const leftDays=()=>Math.ceil((new Date(profile.seller_until)-Date.now())/864e5);
+const fmtDate=d=>new Date(d).toLocaleString('tk-TM',{dateStyle:'short',timeStyle:'short'});
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3500)}
+function go(v){view=v;render()}
+function modal(h){closeModal();const m=document.createElement('div');m.className='modal';m.id='modal';m.innerHTML='<div>'+h+'</div>';m.addEventListener('click',e=>{if(e.target===m)closeModal()});document.body.appendChild(m)}
+function closeModal(){$('#modal')?.remove()}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#inst').style.display=''});
+async function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('#inst').style.display='none'}
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.classList.contains('icon'))return;
+  const r=b.getBoundingClientRect(),s=Math.max(r.width,r.height),d=document.createElement('span');d.className='ripple';
+  d.style.cssText=`width:${s}px;height:${s}px;left:${e.clientX-r.left-s/2}px;top:${e.clientY-r.top-s/2}px`;b.appendChild(d);setTimeout(()=>d.remove(),600)});
 
-  await loadProfile();
-  go('home');
+/* ---------- Dizaýn ---------- */
+const PRESETS={'Deňiz':['#0ea5a4','#6366f1'],'Gün':['#f97316','#ec4899'],'Ýaşyl':['#16a34a','#eab308'],'Gije':['#7c3aed','#06b6d4'],'Mercan':['#e11d48','#f59e0b'],'Asman':['#2563eb','#22d3ee']};
+const DEF={pri:'#0ea5a4',acc:'#6366f1',mode:'auto',radius:16,motion:true};
+let theme={...DEF};
+try{theme={...DEF,...JSON.parse(localStorage.getItem('bazar_theme')||'{}')}}catch(e){}
+function lum(h){const n=parseInt(h.slice(1),16),f=c=>{c/=255;return c<=.03928?c/12.92:((c+.055)/1.055)**2.4};return .2126*f(n>>16)+.7152*f(n>>8&255)+.0722*f(n&255)}
+function applyTheme(){
+  const r=document.documentElement,t=theme;
+  r.style.setProperty('--pri',t.pri);r.style.setProperty('--acc',t.acc);r.style.setProperty('--r',t.radius+'px');
+  r.style.setProperty('--onpri',(lum(t.pri)+lum(t.acc))/2>.45?'#111':'#fff');
+  r.dataset.dark=(t.mode==='dark'||(t.mode==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches))?1:0;
+  r.dataset.motion=t.motion?1:0;
+  $('meta[name=theme-color]').content=t.pri;
+  try{localStorage.setItem('bazar_theme',JSON.stringify(t))}catch(e){}
+}
+function setTheme(p){Object.assign(theme,p);applyTheme();if($('#modal')&&$('#themebox'))themeBox()}
+function themeBox(){
+  $('#themebox').innerHTML=`<h3>🎨 Dizaýny özüňize görä sazlaň</h3>
+  <label>Taýyn reňkler</label><div class="sw">${Object.entries(PRESETS).map(([n,[a,b]])=>`<button title="${n}" class="${theme.pri===a&&theme.acc===b?'on':''}" style="background:linear-gradient(135deg,${a},${b})" onclick="setTheme({pri:'${a}',acc:'${b}'})"></button>`).join('')}</div>
+  <div class="row" style="flex-wrap:nowrap"><div style="flex:1"><label>Esasy reňk</label><input type="color" value="${theme.pri}" oninput="theme.pri=this.value;applyTheme()"></div>
+  <div style="flex:1"><label>Goşmaça reňk</label><input type="color" value="${theme.acc}" oninput="theme.acc=this.value;applyTheme()"></div></div>
+  <label>Mod</label><div class="seg">${[['auto','Awto'],['light','Ýagty'],['dark','Garaňky']].map(([k,v])=>`<button class="sec ${theme.mode===k?'on':''}" onclick="setTheme({mode:'${k}'})">${v}</button>`).join('')}</div>
+  <label>Burç tegeleklenmesi: ${theme.radius}px</label><input type="range" min="2" max="28" value="${theme.radius}" oninput="theme.radius=+this.value;applyTheme()" onchange="themeBox()">
+  <label><input type="checkbox" style="width:auto" ${theme.motion?'checked':''} onchange="setTheme({motion:this.checked})"> Animasiýalar</label>
+  <div class="row" style="margin-top:16px"><button onclick="closeModal()">Taýýar</button><button class="sec" onclick="setTheme({...DEF})">Gaýtadan sazla</button></div>`;
+}
+function openTheme(){modal('<div id="themebox"></div>');themeBox()}
+applyTheme();
+
+/* ---------- Profil / nav ---------- */
+async function loadProfile(){
+  const {data:{session}}=await sb.auth.getSession();
+  user=session?.user||null;profile=null;
+  if(user){
+    const {data}=await sb.from('profiles').select('*').eq('id',user.id).single();
+    profile=data;
+    if(isSeller()&&leftDays()<=5) setTimeout(()=>toast('⚠️ Satyjylyk '+leftDays()+' günden gutarýar'),1500);
+    subscribeOrders();
+  }
+}
+function subscribeOrders(){
+  if(pollT)return;
+  const check=async()=>{
+    if(!user)return;
+    const {data}=await sb.from('orders').select('id').eq('seller_id',user.id).eq('status','taze');
+    if(!data)return;
+    if(lastCnt!==null&&data.length>lastCnt){newOrders+=data.length-lastCnt;toast('🔔 Täze sargyt geldi!');renderNav()}
+    lastCnt=data.length;
+  };
+  check();pollT=setInterval(check,20000);
+}
+function renderNav(){
+  const b=(v,t,extra='')=>`<button class="sec ${view===v?'on':''}" onclick="go('${v}')">${t}${extra}</button>`;
+  let h=b('home','🏠 Baş sahypa');
+  if(user){
+    h+=b('sell','➕ Satmak');
+    h+=b('orders','📦 Sargytlar',newOrders?`<span class="badge">${newOrders}</span>`:'');
+    h+=b('profile','👤 Profil');
+    if(profile?.is_admin) h+=b('admin','🛡 Admin');
+    h+=`<button class="sec" onclick="logout()">Çykmak</button>`;
+  } else h+=`<button onclick="go('login')">Girmek / Hasap açmak</button>`;
+  $('#nav').innerHTML=h;
+  $('#who').textContent=user?user.email.split('@')[0]:'';
+}
+async function logout(){await sb.auth.signOut();clearInterval(pollT);pollT=null;lastCnt=null;user=profile=null;view='home';render()}
+async function render(){
+  renderNav();
+  const a=$('#app');
+  if(view==='home') return viewHome(a);
+  if(view==='login') return viewLogin(a);
+  if(!user){view='login';return viewLogin(a)}
+  if(!profile?.phone&&view!=='profile'){view='profile';toast('Ilki profilyňyzy dolduryň: ady, telefon, şäher')}
+  if(view==='sell') return viewSell(a);
+  if(view==='orders') return viewOrders(a);
+  if(view==='profile') return viewProfile(a);
+  if(view==='admin') return viewAdmin(a);
+}
+const skel=n=>Array.from({length:n},()=>'<div class="box" style="height:200px;opacity:.5"></div>').join('');
+
+/* ---------- Baş sahypa ---------- */
+let products=[];
+async function viewHome(a){
+  a.innerHTML=`<div class="hero"><i class="orb a"></i><i class="orb b"></i><h1>Bazar</h1><p>Ähli zat bir ýerde</p>
+  <div class="row"><input id="q" placeholder="Haryt gözle..." value="${esc(query)}" onkeydown="if(event.key==='Enter')doSearch()"><button onclick="doSearch()">🔍</button></div></div>
+  <div class="chips">${CATS.map(([i,n])=>`<button class="sec ${query===n?'on':''}" onclick="query='${n}';viewHome($('#app'))">${i} ${n}</button>`).join('')}${query?`<button class="sec" onclick="query='';viewHome($('#app'))">✕ Arassala</button>`:''}</div>
+  <div id="list" class="grid">${skel(6)}</div>`;
+  let q=sb.from('products').select('*').order('created_at',{ascending:false}).limit(60);
+  if(query){const s=query.replace(/[,()*%]/g,' ').trim();q=q.or(`title.ilike.*${s}*,description.ilike.*${s}*`)}
+  const {data,error}=await q;
+  if(error){$('#list').className='';$('#list').className='';$('#list').innerHTML='<div class="empty">'+esc(error.message)+'</div>';return}
+  products=data||[];
+  $('#list').className=products.length?'grid':'';
+  $('#list').innerHTML=products.length?products.map((p,i)=>`<div class="card p" onclick="openProduct('${p.id}')"><div class="im"><img loading="lazy" src="${esc(p.image_url)}" alt=""></div><div class="b"><div class="t">${esc(p.title)}</div><div class="price">${esc(p.price)} TMT</div><div class="mut">${esc(p.city||'')}</div></div></div>`).join(''):'<div class="empty"><b>🛍️</b>Haryt tapylmady</div>';
+}
+function doSearch(){query=$('#q').value.trim();viewHome($('#app'))}
+function openProduct(id){
+  const p=products.find(x=>String(x.id)===String(id));if(!p)return;
+  modal(`<img class="big" src="${esc(p.image_url)}" alt=""><h3 style="margin-top:12px">${esc(p.title)}</h3>
+  <div class="price" style="font-size:20px">${esc(p.price)} TMT</div><div class="mut">${esc(p.city||'')}</div>
+  <p>${esc(p.description||'')}</p>
+  <label>Sany</label><input id="b_qty" type="number" min="1" value="1">
+  <label>Adyňyz</label><input id="b_name" value="${esc(profile?.full_name||'')}">
+  <label>Telefon</label><input id="b_phone" value="${esc(profile?.phone||'')}">
+  <label>Şäher</label><input id="b_city" value="${esc(profile?.city||'')}">
+  <label>Salgy</label><input id="b_addr">
+  <div class="row" style="margin-top:14px"><button id="b_btn" onclick="buy('${p.id}')">Sargyt et</button><button class="sec" onclick="closeModal()">Ýap</button></div>`);
+}
+async function buy(id){
+  if(!user){closeModal();toast('Ilki giriň');return go('login')}
+  const p=products.find(x=>String(x.id)===String(id));if(!p)return;
+  const name=$('#b_name').value.trim(),phone=$('#b_phone').value.trim();
+  if(!name||!phone)return toast('Ady we telefony giriziň');
+  $('#b_btn').disabled=true;
+  const {error}=await sb.from('orders').insert({product_id:p.id,seller_id:p.seller_id,buyer_id:user.id,product_title:p.title,qty:Math.max(1,parseInt($('#b_qty').value)||1),status:'taze',buyer_name:name,buyer_phone:phone,buyer_city:$('#b_city').value.trim(),buyer_address:$('#b_addr').value.trim()});
+  if(error){$('#b_btn').disabled=false;return toast(error.message)}
+  closeModal();toast('✅ Sargyt iberildi');
+  }
+  /* ---------- Giriş ---------- */
+let mode='in';
+function viewLogin(a){
+  a.innerHTML=`<div class="box" style="max-width:420px;margin:20px auto"><h3>🛒 Bazar</h3>
+  <button class="sec" style="width:100%" onclick="googleLogin()">Gmail (Google) bilen girmek</button>
+  <p class="mut" style="text-align:center">ýa-da</p>
+  <label>Gmail adresiňiz</label><input id="em" type="email" placeholder="ady@gmail.com" autocomplete="email">
+  <label>Parol</label><input id="pw" type="password" placeholder="Iň az 6 simwol" autocomplete="current-password">
+  <div class="row" style="margin-top:14px"><button onclick="emailAuth('in')">Girmek</button><button class="sec" onclick="emailAuth('up')">Hasap açmak</button></div></div>`;
+}
+async function googleLogin(){
+  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+  if(error)toast(error.message);
+}
+async function emailAuth(kind){
+  const email=$('#em').value.trim().toLowerCase(),password=$('#pw').value;
+  if(!/^[^@\s]+@gmail\.com$/.test(email))return toast('Diňe Gmail adresi ulanyň');
+  if(password.length<6)return toast('Parol iň az 6 simwol bolmaly');
+  if(kind==='up'){
+    const {data,error}=await sb.auth.signUp({email,password});
+    if(error)return toast(error.message);
+    if(!data.session)return toast('Gmail poçtaňyzy tassyklaň, soňra giriň');
+  }else{
+    const {error}=await sb.auth.signInWithPassword({email,password});
+    if(error)return toast('Email ýa-da parol nädogry');
+  }
+  await loadProfile();go('home');
 }
 
 /* ---------- Profil ---------- */
-function viewProfile(a) {
-  a.innerHTML = `
-    <div class="box" style="max-width:480px">
-      <h3>Profil</h3>
-      <label>Ady</label>
-      <input id="p_name" value="${esc(profile?.full_name || '')}">
-      <label>Telefon</label>
-      <input id="p_phone" type="tel" value="${esc(profile?.phone || '')}">
-      <label>Şäher</label>
-      <input id="p_city" value="${esc(profile?.city || '')}">
-      <button style="margin-top:14px" onclick="saveProfile()">Ýatda sakla</button>
-    </div>`;
+function viewProfile(a){
+  a.innerHTML=`<div class="box"><h3>Profil</h3>
+  <label>Ady</label><input id="p_name" value="${esc(profile?.full_name||'')}">
+  <label>Telefon</label><input id="p_phone" value="${esc(profile?.phone||'')}">
+  <label>Şäher</label><input id="p_city" value="${esc(profile?.city||'')}">
+  <div style="margin-top:14px"><button onclick="saveProfile()">Ýatda sakla</button></div></div>`;
 }
-
-async function saveProfile() {
-  const { error } = await sb.from('profiles').update({
-    full_name: $('#p_name').value.trim(),
-    phone: $('#p_phone').value.trim(),
-    city: $('#p_city').value.trim()
-  }).eq('id', user.id);
-
-  if (error) return toast(error.message);
-  await loadProfile();
-  toast('Ýatda saklandy');
+async function saveProfile(){
+  const {error}=await sb.from('profiles').update({full_name:$('#p_name').value.trim(),phone:$('#p_phone').value.trim(),city:$('#p_city').value.trim()}).eq('id',user.id);
+  if(error)return toast(error.message);
+  await loadProfile();toast('Ýatda saklandy');
 }
 
 /* ---------- Satmak ---------- */
-async function viewSell(a) {
-  let h = '';
-
-  if (!isSeller()) {
-    const { data: reqs, error } = await sb
-      .from('sub_requests')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (error) {
-      a.innerHTML = `<div class="box">Ýalňyşlyk: ${esc(error.message)}</div>`;
-      return;
-    }
-
-    const pending = reqs?.[0]?.status === 'pending';
-
-    h += `
-      <div class="box">
-        <h3>Satyjy bolmak</h3>
-        <p>Aýlyk töleg: <b>${PRICE} TMT</b>.</p>
-        <p class="mut">Töleg baradaky maglumaty iberiň. Admin barlap, haýyşy tassyklaýar.</p>
-        ${pending
-          ? '<span class="tag w">Haýşyňyz barlanylýar</span>'
-          : `
-            <label>Töleg barada maglumat</label>
-            <textarea id="sr_note" placeholder="Töleg belgisi ýa-da düşündiriş"></textarea>
-            <button style="margin-top:10px" onclick="sendSubReq()">Haýyş iber</button>
-          `}
-      </div>`;
-    a.innerHTML = h;
-    return;
-  }
-
-  h += `
-    <div class="box">
-      <span class="tag">Satyjy hasaby açyk</span>
-    </div>
-    <div class="box">
-      <h3>Täze haryt goş</h3>
-      <label>Ady</label><input id="n_title">
-      <label>Bahasy (TMT)</label><input id="n_price" type="number" min="0" step="0.01">
-      <label>Şäher</label><input id="n_city" value="${esc(profile?.city || '')}">
-      <label>Maglumat</label><textarea id="n_desc"></textarea>
-      <label>Surat</label><input id="n_img" type="file" accept="image/*">
-      <button style="margin-top:12px" id="n_btn" onclick="addProduct()">Goş</button>
-    </div>
-    <h3>Meniň harytlarym</h3>
-    <div id="mine" class="grid mut">Ýüklenýär...</div>`;
-
-  a.innerHTML = h;
-
-  const { data, error } = await sb.from('products')
-    .select('*').eq('seller_id', user.id)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    $('#mine').textContent = error.message;
-    return;
-  }
-
-  $('#mine').className = 'grid';
-  $('#mine').innerHTML = data?.length ? data.map(p => `
-    <div class="card">
-      <img src="${esc(p.image_url || '')}" alt="">
-      <div class="b">
-        ${esc(p.title)}
-        <div class="price">${esc(p.price)} TMT</div>
-        <button class="red" style="margin-top:6px"
-          onclick="delProduct('${p.id}')">Poz</button>
-      </div>
-    </div>`).join('') : '<div class="mut">Heniz haryt ýok.</div>';
+let draft={t:'',p:'',c:'',d:''};
+try{draft={...draft,...JSON.parse(sessionStorage.getItem('bazar_draft')||'{}')}}catch(e){}
+function saveDraft(){try{sessionStorage.setItem('bazar_draft',JSON.stringify(draft))}catch(e){}}
+function pickImg(inp){
+  const f=inp.files[0],img=$('#prev');
+  if(!f){img.style.display='none';return}
+  img.src=URL.createObjectURL(f);img.style.display='block';
 }
-
-async function sendSubReq() {
-  const note = $('#sr_note')?.value.trim() || '';
-  const { error } = await sb.from('sub_requests')
-    .insert({ user_id: user.id, note });
-
-  if (error) return toast(error.message);
-  toast('Haýyş ugradyldy');
-  viewSell($('#app'));
-}
-
-async function addProduct() {
-  const title = $('#n_title').value.trim();
-  const price = parseFloat($('#n_price').value);
-  const file = $('#n_img').files[0];
-
-  if (!title || !Number.isFinite(price) || price <= 0)
-    return toast('Harydyň adyny we dogry bahasyny giriziň');
-
-  if (!file) return toast('Surat saýlaň');
-  if (file.size > 5 * 1024 * 1024)
-    return toast('Surat 5 MB-dan kiçi bolmaly');
-
-  $('#n_btn').disabled = true;
-  const ext = (file.name.split('.').pop() || 'jpg')
-    .toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-  const path = `${user.id}/${Date.now()}.${ext}`;
-
-  const up = await sb.storage.from('product-images')
-    .upload(path, file, { contentType: file.type });
-
-  if (up.error) {
-    $('#n_btn').disabled = false;
-    return toast('Surat ýüklenmedi: ' + up.error.message);
+function toJpeg(file,max=1200){return new Promise((ok,no)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const s=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(u);b?ok(b):no()},'image/jpeg',.85)};img.onerror=()=>no();img.src=u})}
+async function viewSell(a){
+  let h='';
+  if(!isSeller()){
+    const {data:reqs,error}=await sb.from('sub_requests').select('*').eq('user_id',user.id).order('created_at',{ascending:false}).limit(1);
+    if(error){a.innerHTML=`<div class="box">Ýalňyşlyk: ${esc(error.message)}</div>`;return}
+    const pending=reqs?.[0]?.status==='pending';
+    h+=`<div class="box"><h3>Satyjy bolmak</h3><p>Aýlyk töleg: <b>${PRICE} TMT</b>.</p><p class="mut">Töleg baradaky maglumaty iberiň. Admin barlap, haýyşy tassyklaýar.</p>
+    ${pending?'<span class="tag w">Haýyşyňyz barlanylýar</span>':`<textarea id="sr_note" placeholder="Töleg belgisi ýa-da düşündiriş"></textarea><div style="margin-top:10px"><button onclick="sendSubReq()">Haýyş iber</button></div>`}</div>`;
+    a.innerHTML=h;return;
   }
-
-  const image_url = sb.storage.from('product-images')
-    .getPublicUrl(path).data.publicUrl;
-
-  const { error } = await sb.from('products').insert({
-    seller_id: user.id,
-    title,
-    price,
-    city: $('#n_city').value.trim(),
-    description: $('#n_desc').value.trim(),
-    image_url
-  });
-
-  if (error) {
-    $('#n_btn').disabled = false;
-    return toast(error.message);
-  }
-
-  toast('Haryt goşuldy');
-  viewSell($('#app'));
+  h+=`<div class="box"><h3>Satyjy hasaby açyk</h3><span class="tag g">${leftDays()} gün galdy</span></div>
+  <div class="box"><h3>Täze haryt goş</h3>
+  <label>Ady</label><input id="n_title" value="${esc(draft.t)}" oninput="draft.t=this.value;saveDraft()">
+  <label>Bahasy (TMT)</label><input id="n_price" type="number" inputmode="decimal" value="${esc(draft.p)}" oninput="draft.p=this.value;saveDraft()">
+  <label>Şäher</label><input id="n_city" value="${esc(draft.c||profile?.city||'')}" oninput="draft.c=this.value;saveDraft()">
+  <label>Maglumat</label><textarea id="n_desc" oninput="draft.d=this.value;saveDraft()">${esc(draft.d)}</textarea>
+  <label>Surat</label><input id="n_img" type="file" accept="image/*" onchange="pickImg(this)"><img id="prev" alt="">
+  <div style="margin-top:14px"><button id="n_btn" onclick="addProduct()">Goş</button></div></div>
+  <div class="box"><h3>Meniň harytlarym</h3><div id="mine">Ýüklenýär...</div></div>`;
+  a.innerHTML=h;
+  const {data,error}=await sb.from('products').select('*').eq('seller_id',user.id).order('created_at',{ascending:false});
+  if(error){$('#mine').textContent=error.message;return}
+  $('#mine').className='grid';
+  $('#mine').innerHTML=data?.length?data.map(p=>`<div class="card"><div class="im"><img src="${esc(p.image_url)}" alt=""></div><div class="b"><div class="t">${esc(p.title)}</div><div class="price">${esc(p.price)} TMT</div><button class="red" style="margin-top:8px;padding:6px 12px" onclick="delProduct('${p.id}')">Poz</button></div></div>`).join(''):'<div class="mut">Heniz haryt ýok.</div>';
 }
-
-async function delProduct(id) {
-  if (!confirm('Haryt pozulsynmy?')) return;
-
-  const { error } = await sb.from('products')
-    .delete().eq('id', id);
-
-  if (error) return toast(error.message);
+async function sendSubReq(){
+  const note=$('#sr_note')?.value.trim()||'';
+  const {error}=await sb.from('sub_requests').insert({user_id:user.id,note});
+  if(error)return toast(error.message);
+  toast('Haýyş ugradyldy');viewSell($('#app'));
+}
+async function addProduct(){
+  const title=$('#n_title').value.trim(),price=parseFloat($('#n_price').value),file=$('#n_img').files[0];
+  if(!title||!Number.isFinite(price)||price<=0)return toast('Harydyň adyny we dogry bahasyny giriziň');
+  if(!file)return toast('Surat saýlaň');
+  $('#n_btn').disabled=true;
+  let blob;
+  try{blob=await toJpeg(file)}catch(e){$('#n_btn').disabled=false;return toast('Surat açylmady, başga surat saýlaň')}
+  const path=`${user.id}/${Date.now()}.jpg`;
+  const up=await sb.storage.from('product-images').upload(path,blob,{contentType:'image/jpeg'});
+  if(up.error){$('#n_btn').disabled=false;return toast('Surat ýüklenmedi: '+up.error.message)}
+  const image_url=sb.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+  const {error}=await sb.from('products').insert({seller_id:user.id,title,price,city:$('#n_city').value.trim(),description:$('#n_desc').value.trim(),image_url});
+  if(error){$('#n_btn').disabled=false;return toast(error.message)}
+  draft={t:'',p:'',c:'',d:''};saveDraft();
+  toast('Haryt goşuldy');viewSell($('#app'));
+}
+async function delProduct(id){
+  if(!confirm('Haryt pozulsynmy?'))return;
+  const {error}=await sb.from('products').delete().eq('id',id);
+  if(error)return toast(error.message);
   viewSell($('#app'));
 }
 
 /* ---------- Sargytlar ---------- */
-const STATUS = {
-  taze: 'Täze',
-  tassyklandy: 'Tassyklandy',
-  ugradyldy: 'Ugradyldy',
-  yatyryldy: 'Ýatyryldy'
-};
-
-async function viewOrders(a) {
-  newOrders = 0;
-  renderNav();
-  a.innerHTML = '<div class="mut">Ýüklenýär...</div>';
-
-  const { data, error } = await sb.from('orders')
-    .select('*').order('created_at', { ascending: false });
-
-  if (error) {
-    a.innerHTML = `Ýalňyşlyk: ${esc(error.message)}`;
-    return;
-  }
-
-  const sold = (data || []).filter(o => o.seller_id === user.id);
-  const bought = (data || []).filter(o => o.buyer_id === user.id);
-
-  const card = o => `
-    <div class="box">
-      <b>${esc(o.product_title || 'Haryt')}</b> × ${esc(o.qty ?? 1)}
-      <span class="tag">${esc(STATUS[o.status] || o.status || '')}</span>
-      <div class="mut">${esc(fmtDate(o.created_at))}</div>
-      ${o.buyer_name ? `
-        <div>👤 ${esc(o.buyer_name)}</div>
-        <div>📞 <a href="tel:${esc(o.buyer_phone)}">${esc(o.buyer_phone)}</a></div>
-        <div>🏙 ${esc(o.buyer_city || '')}</div>
-        <div>📍 ${esc(o.buyer_address || '')}</div>
-        <select style="margin-top:8px"
-          onchange="setStatus('${o.id}',this.value)">
-          ${Object.entries(STATUS).map(([k,v]) =>
-            `<option value="${k}" ${o.status === k ? 'selected' : ''}>${v}</option>`
-          ).join('')}
-        </select>` : ''}
-    </div>`;
-
-  a.innerHTML = `
-    <h3>Maňa gelen sargytlar</h3>
-    ${sold.map(card).join('') || '<div class="mut">Sargyt ýok.</div>'}
-    <h3>Meniň sargytlarym</h3>
-    ${bought.map(card).join('') || '<div class="mut">Sargyt ýok.</div>'}`;
+const STATUS={taze:'Täze',tassyklandy:'Tassyklandy',ugradyldy:'Ugradyldy',yatyryldy:'Ýatyryldy'};
+async function viewOrders(a){
+  newOrders=0;renderNav();a.innerHTML='Ýüklenýär...';
+  const {data,error}=await sb.from('orders').select('*').order('created_at',{ascending:false});
+  if(error){a.innerHTML=`Ýalňyşlyk: ${esc(error.message)}`;return}
+  const sold=(data||[]).filter(o=>o.seller_id===user.id),bought=(data||[]).filter(o=>o.buyer_id===user.id);
+  const card=o=>`<div class="box"><b>${esc(o.product_title||'Haryt')}</b> × ${esc(o.qty??1)} <span class="tag">${esc(STATUS[o.status]||o.status||'')}</span>
+  <div class="mut">${esc(fmtDate(o.created_at))}</div>
+  ${o.buyer_name&&o.seller_id===user.id?`<div>👤 ${esc(o.buyer_name)}</div><div>📞 <a href="tel:${esc(o.buyer_phone)}">${esc(o.buyer_phone)}</a></div><div>🏙️ ${esc(o.buyer_city||'')}</div><div>📍 ${esc(o.buyer_address||'')}</div>
+  <select onchange="setStatus('${o.id}',this.value)" style="margin-top:8px">${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${o.status===k?'selected':''}>${v}</option>`).join('')}</select>`:''}</div>`;
+  a.innerHTML=`<h3>Maňa gelen sargytlar</h3>${sold.map(card).join('')||'<div class="empty">Sargyt ýok.</div>'}
+  <h3>Meniň sargytlarym</h3>${bought.map(card).join('')||'<div class="empty">Sargyt ýok.</div>'}`;
 }
-
-async function setStatus(id, status) {
-  const { error } = await sb.from('orders')
-    .update({ status }).eq('id', id);
-  toast(error ? error.message : 'Ýatda saklandy');
+async function setStatus(id,status){
+  const {error}=await sb.from('orders').update({status}).eq('id',id);
+  toast(error?error.message:'Ýatda saklandy');
 }
 
 /* ---------- Admin ---------- */
-async function viewAdmin(a) {
-  const { data, error } = await sb.from('sub_requests')
-    .select('*, profiles(email,full_name,phone)')
-    .order('created_at', { ascending: false }).limit(50);
-
-  if (error) {
-    a.innerHTML = `Ýalňyşlyk: ${esc(error.message)}`;
-    return;
-  }
-
-  a.innerHTML = `
-    <h3>Satyjylyk haýyşlary (${PRICE} TMT / aý)</h3>
-    ${(data || []).map(r => `
-      <div class="box">
-        <b>${esc(r.profiles?.email || r.user_id)}</b>
-        ${esc(r.profiles?.full_name || '')}
-        ${esc(r.profiles?.phone || '')}
-        <span class="tag ${r.status === 'pending' ? 'w' : r.status === 'rejected' ? 'r' : ''}">
-          ${esc(r.status || '')}
-        </span>
-        <div class="mut">${esc(fmtDate(r.created_at))}</div>
-        <p>${esc(r.note || '')}</p>
-        ${r.status === 'pending' ? `
-          <button onclick="adminAct('approve_request','${r.id}')">Tassykla (+30 gün)</button>
-          <button class="red" onclick="adminAct('reject_request','${r.id}')">Ret et</button>
-        ` : ''}
-      </div>`).join('') || '<div class="mut">Haýyş ýok.</div>'}`;
+async function viewAdmin(a){
+  const {data,error}=await sb.from('sub_requests').select('*, profiles(email,full_name,phone)').order('created_at',{ascending:false}).limit(50);
+  if(error){a.innerHTML=`Ýalňyşlyk: ${esc(error.message)}`;return}
+  a.innerHTML=`<h3>Satyjylyk haýyşlary (${PRICE} TMT / aý)</h3>${(data||[]).map(r=>`<div class="box"><b>${esc(r.profiles?.email||r.user_id)}</b> ${esc(r.profiles?.full_name||'')} ${esc(r.profiles?.phone||'')} <span class="tag">${esc(r.status||'')}</span>
+  <div class="mut">${esc(fmtDate(r.created_at))}</div><p>${esc(r.note||'')}</p>
+  ${r.status==='pending'?`<div class="row"><button onclick="adminAct('approve_sub','${r.id}')">Tassykla (+30 gün)</button><button class="sec" onclick="adminAct('reject_sub','${r.id}')">Ret et</button></div>`:''}</div>`).join('')||'<div class="empty">Haýyş ýok.</div>'}`;
+}
+async function adminAct(fn,id){
+  const {error}=await sb.rpc(fn,{rid:id});
+  if(error)return toast(error.message);
+  toast('Amal ýerine ýetirildi');viewAdmin($('#app'));
 }
 
-async function adminAct(fn, id) {
-  const { error } = await sb.rpc(fn, { rid: id });
-  if (error) return toast(error.message);
-  toast('Amal ýerine ýetirildi');
-  viewAdmin($('#app'));
-}
-    
+/* ---------- Başlangyç ---------- */
+sb.auth.onAuthStateChange(async ev=>{if(ev==='SIGNED_IN'){await loadProfile();render()}});
+(async()=>{await loadProfile();render()})();
+</script>
+</body>
+</html>
